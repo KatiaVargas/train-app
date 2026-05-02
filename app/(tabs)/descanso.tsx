@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Footer from '@/components/Footer';
 
@@ -7,6 +7,11 @@ export default function DescansoScreen() {
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds = 01:30
   const [initialTime, setInitialTime] = useState(90);
   const [isRunning, setIsRunning] = useState(false);
+  
+  // States for custom time modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [customMins, setCustomMins] = useState('');
+  const [customSecs, setCustomSecs] = useState('');
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -46,6 +51,18 @@ export default function DescansoScreen() {
     setIsRunning(false);
   };
 
+  const applyCustomTime = () => {
+    const m = parseInt(customMins || '0', 10);
+    const s = parseInt(customSecs || '0', 10);
+    const totalSeconds = (m * 60) + s;
+    if (totalSeconds > 0) {
+      setPreset(totalSeconds);
+    }
+    setModalVisible(false);
+    setCustomMins('');
+    setCustomSecs('');
+  };
+
   const presets = [
     { label: '30s', value: 30 },
     { label: '1m', value: 60 },
@@ -71,6 +88,12 @@ export default function DescansoScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity 
+            style={styles.presetChip}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.presetText}>Personalizar</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.timerCircle}>
@@ -102,6 +125,55 @@ export default function DescansoScreen() {
         </TouchableOpacity>
       </View>
       <Footer />
+
+      {/* Modal para tiempo personalizado */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Tiempo Personalizado</Text>
+            
+            <View style={styles.inputRow}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Minutos</Text>
+                <TextInput
+                  style={styles.timeInput}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  value={customMins}
+                  onChangeText={setCustomMins}
+                  maxLength={2}
+                />
+              </View>
+              <Text style={styles.timeSeparator}>:</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Segundos</Text>
+                <TextInput
+                  style={styles.timeInput}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  value={customSecs}
+                  onChangeText={setCustomSecs}
+                  maxLength={2}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalApplyButton} onPress={applyCustomTime}>
+                <Text style={styles.modalApplyText}>Aplicar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -215,6 +287,95 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 16,
     color: '#333333',
+    fontWeight: 'bold',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#11181C',
+    marginBottom: 20,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
+  },
+  inputContainer: {
+    alignItems: 'center',
+  },
+  timeSeparator: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#11181C',
+    marginHorizontal: 15,
+    marginTop: 15,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#687076',
+    marginBottom: 8,
+  },
+  timeInput: {
+    width: 70,
+    height: 60,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#eeeeee',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#11181C',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginRight: 10,
+    borderRadius: 12,
+    backgroundColor: '#F8F8F8',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#687076',
+    fontWeight: 'bold',
+  },
+  modalApplyButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginLeft: 10,
+    borderRadius: 12,
+    backgroundColor: '#6C63FF',
+  },
+  modalApplyText: {
+    fontSize: 16,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
 });

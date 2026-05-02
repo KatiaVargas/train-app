@@ -1,25 +1,105 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Footer from '@/components/Footer';
 
+type ExerciseSet = {
+  id: string;
+  kg: string;
+  reps: string;
+  completed: boolean;
+};
+
+type Exercise = {
+  id: string;
+  name: string;
+  sets: ExerciseSet[];
+};
+
 export default function EntrenarScreen() {
-  const dummyExercises = [
-    { id: '1', name: 'Press de Banca', sets: 3 },
-    { id: '2', name: 'Dominadas', sets: 3 },
-  ];
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [newExerciseName, setNewExerciseName] = useState('');
+
+  const addExercise = () => {
+    if (newExerciseName.trim() === '') return;
+    
+    const newExercise: Exercise = {
+      id: Date.now().toString(),
+      name: newExerciseName,
+      sets: [{ id: Date.now().toString() + '-1', kg: '', reps: '', completed: false }],
+    };
+    
+    setExercises([...exercises, newExercise]);
+    setNewExerciseName('');
+  };
+
+  const addSet = (exerciseId: string) => {
+    setExercises(exercises.map(exercise => {
+      if (exercise.id === exerciseId) {
+        return {
+          ...exercise,
+          sets: [...exercise.sets, { id: Date.now().toString(), kg: '', reps: '', completed: false }],
+        };
+      }
+      return exercise;
+    }));
+  };
+
+  const updateSet = (exerciseId: string, setId: string, field: 'kg' | 'reps', value: string) => {
+    setExercises(exercises.map(exercise => {
+      if (exercise.id === exerciseId) {
+        return {
+          ...exercise,
+          sets: exercise.sets.map(set => 
+            set.id === setId ? { ...set, [field]: value } : set
+          ),
+        };
+      }
+      return exercise;
+    }));
+  };
+
+  const toggleSetCompleted = (exerciseId: string, setId: string) => {
+    setExercises(exercises.map(exercise => {
+      if (exercise.id === exerciseId) {
+        return {
+          ...exercise,
+          sets: exercise.sets.map(set => 
+            set.id === setId ? { ...set, completed: !set.completed } : set
+          ),
+        };
+      }
+      return exercise;
+    }));
+  };
+
+  const removeExercise = (exerciseId: string) => {
+    setExercises(exercises.filter(ex => ex.id !== exerciseId));
+  };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Rutina Torso</Text>
-          <Text style={styles.subtitle}>Añadir nota...</Text>
+          <TextInput 
+            style={styles.titleInput} 
+            placeholder="Nombre de Rutina" 
+            defaultValue="Rutina Torso" 
+          />
+          <TextInput 
+            style={styles.subtitleInput} 
+            placeholder="Añadir nota..." 
+          />
         </View>
 
-        {dummyExercises.map((exercise) => (
+        {exercises.map((exercise) => (
           <View key={exercise.id} style={styles.exerciseCard}>
-            <Text style={styles.exerciseTitle}>{exercise.name}</Text>
+            <View style={styles.exerciseHeader}>
+              <Text style={styles.exerciseTitle}>{exercise.name}</Text>
+              <TouchableOpacity onPress={() => removeExercise(exercise.id)}>
+                <MaterialIcons name="close" size={24} color="#999" />
+              </TouchableOpacity>
+            </View>
             
             <View style={styles.tableHeader}>
               <Text style={styles.headerCell}>Serie</Text>
@@ -28,24 +108,60 @@ export default function EntrenarScreen() {
               <Text style={styles.headerCellIcon}></Text>
             </View>
 
-            {Array.from({ length: exercise.sets }).map((_, index) => (
-              <View key={index} style={styles.row}>
+            {exercise.sets.map((set, index) => (
+              <View key={set.id} style={[styles.row, set.completed && styles.rowCompleted]}>
                 <Text style={styles.cellText}>{index + 1}</Text>
-                <TextInput style={styles.input} placeholder="0" keyboardType="numeric" />
-                <TextInput style={styles.input} placeholder="0" keyboardType="numeric" />
-                <TouchableOpacity style={styles.checkButton}>
-                  <MaterialIcons name="check" size={20} color="#687076" />
+                <TextInput 
+                  style={[styles.input, set.completed && styles.inputCompleted]} 
+                  placeholder="0" 
+                  keyboardType="numeric"
+                  value={set.kg}
+                  onChangeText={(val) => updateSet(exercise.id, set.id, 'kg', val)}
+                  editable={!set.completed}
+                />
+                <TextInput 
+                  style={[styles.input, set.completed && styles.inputCompleted]} 
+                  placeholder="0" 
+                  keyboardType="numeric"
+                  value={set.reps}
+                  onChangeText={(val) => updateSet(exercise.id, set.id, 'reps', val)}
+                  editable={!set.completed}
+                />
+                <TouchableOpacity 
+                  style={[styles.checkButton, set.completed && styles.checkButtonActive]}
+                  onPress={() => toggleSetCompleted(exercise.id, set.id)}
+                >
+                  <MaterialIcons name="check" size={20} color={set.completed ? "#ffffff" : "#687076"} />
                 </TouchableOpacity>
               </View>
             ))}
             
-            <TouchableOpacity style={styles.addSetButton}>
+            <TouchableOpacity style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
               <Text style={styles.addSetText}>+ Añadir Serie</Text>
             </TouchableOpacity>
           </View>
         ))}
 
-        <TouchableOpacity style={styles.finishButton}>
+        <View style={styles.addExerciseContainer}>
+          <TextInput
+            style={styles.addExerciseInput}
+            placeholder="Ej. Press de Banca"
+            value={newExerciseName}
+            onChangeText={setNewExerciseName}
+          />
+          <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
+            <Text style={styles.addExerciseButtonText}>Añadir Ejercicio</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.finishButton}
+          onPress={() => {
+            // Aquí iría la lógica para guardar el entrenamiento en una BD
+            alert("¡Entrenamiento finalizado!");
+            setExercises([]);
+          }}
+        >
           <Text style={styles.finishButtonText}>Finalizar Entrenamiento</Text>
         </TouchableOpacity>
       </View>
@@ -65,15 +181,17 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
   },
-  title: {
+  titleInput: {
     fontSize: 26,
     fontWeight: 'bold',
     color: '#11181C',
+    padding: 0,
   },
-  subtitle: {
+  subtitleInput: {
     fontSize: 16,
     color: '#687076',
     marginTop: 5,
+    padding: 0,
   },
   exerciseCard: {
     backgroundColor: '#F8F8F8',
@@ -83,11 +201,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#eeeeee',
   },
+  exerciseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   exerciseTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#6C63FF',
-    marginBottom: 15,
   },
   tableHeader: {
     flexDirection: 'row',
@@ -108,6 +231,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  rowCompleted: {
+    opacity: 0.8,
+  },
   cellText: {
     flex: 1,
     textAlign: 'center',
@@ -125,6 +251,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  inputCompleted: {
+    backgroundColor: '#f0f0f0',
+    color: '#999999',
+  },
   checkButton: {
     width: 40,
     height: 40,
@@ -133,6 +263,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
+  },
+  checkButtonActive: {
+    backgroundColor: '#28a745',
   },
   addSetButton: {
     marginTop: 10,
@@ -143,6 +276,30 @@ const styles = StyleSheet.create({
     color: '#6C63FF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  addExerciseContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  addExerciseInput: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#eeeeee',
+    marginRight: 10,
+    fontSize: 16,
+  },
+  addExerciseButton: {
+    backgroundColor: '#11181C',
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  addExerciseButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   finishButton: {
     backgroundColor: '#6C63FF',

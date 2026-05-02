@@ -5,19 +5,110 @@ import { useRouter } from 'expo-router';
 import Footer from '@/components/Footer';
 import { useWorkoutContext, Exercise, ExerciseSet } from '@/context/WorkoutContext';
 
+const templates = [
+  {
+    id: 't1',
+    title: 'Día de Push (Empuje)',
+    description: 'Enfoque en Pecho, Hombros y Tríceps.',
+    exercises: [
+      { name: 'Press de Banca', setsCount: 4 },
+      { name: 'Press Militar', setsCount: 3 },
+      { name: 'Aperturas con Mancuernas', setsCount: 3 },
+      { name: 'Extensión de Tríceps en Polea', setsCount: 3 }
+    ]
+  },
+  {
+    id: 't2',
+    title: 'Día de Pull (Tracción)',
+    description: 'Enfoque en Espalda y Bíceps.',
+    exercises: [
+      { name: 'Dominadas', setsCount: 4 },
+      { name: 'Remo con Barra', setsCount: 3 },
+      { name: 'Jalón al Pecho', setsCount: 3 },
+      { name: 'Curl de Bíceps', setsCount: 3 }
+    ]
+  },
+  {
+    id: 't3',
+    title: 'Día de Piernas',
+    description: 'Enfoque en Cuádriceps, Isquiosurales y Glúteos.',
+    exercises: [
+      { name: 'Sentadilla Libre', setsCount: 4 },
+      { name: 'Prensa Inclinada', setsCount: 3 },
+      { name: 'Peso Muerto Rumano', setsCount: 3 },
+      { name: 'Elevación de Talones', setsCount: 4 }
+    ]
+  },
+  {
+    id: 't4',
+    title: 'Full Body',
+    description: 'Entrenamiento de cuerpo completo.',
+    exercises: [
+      { name: 'Sentadilla Libre', setsCount: 3 },
+      { name: 'Press de Banca', setsCount: 3 },
+      { name: 'Remo con Barra', setsCount: 3 },
+      { name: 'Press Militar', setsCount: 3 }
+    ]
+  }
+];
+
 export default function EntrenarScreen() {
   const router = useRouter();
   const { addWorkout } = useWorkoutContext();
   
-  const [title, setTitle] = useState('Rutina personalizada');
+  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
+  const [title, setTitle] = useState('');
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [newExerciseName, setNewExerciseName] = useState('');
   const [startTime, setStartTime] = useState<number>(Date.now());
 
-  // Reset start time when component mounts or a new session starts
-  useEffect(() => {
+  const startCustomWorkout = () => {
+    setTitle('Rutina Personalizada');
+    setExercises([]);
     setStartTime(Date.now());
-  }, []);
+    setIsWorkoutActive(true);
+  };
+
+  const startTemplate = (template: typeof templates[0]) => {
+    setTitle(template.title);
+    
+    const populatedExercises: Exercise[] = template.exercises.map((ex, exIndex) => {
+      const sets: ExerciseSet[] = Array.from({ length: ex.setsCount }).map((_, setIndex) => ({
+        id: `set-${exIndex}-${setIndex}`,
+        kg: '',
+        reps: '',
+        completed: false
+      }));
+      return {
+        id: `ex-${exIndex}`,
+        name: ex.name,
+        sets
+      };
+    });
+
+    setExercises(populatedExercises);
+    setStartTime(Date.now());
+    setIsWorkoutActive(true);
+  };
+
+  const cancelWorkout = () => {
+    Alert.alert(
+      "Cancelar entrenamiento",
+      "¿Estás seguro de que quieres cancelar? Perderás todo el progreso de esta sesión.",
+      [
+        { text: "No", style: "cancel" },
+        { 
+          text: "Sí, cancelar", 
+          style: "destructive",
+          onPress: () => {
+            setIsWorkoutActive(false);
+            setExercises([]);
+            setTitle('');
+          }
+        }
+      ]
+    );
+  };
 
   const addExercise = () => {
     if (newExerciseName.trim() === '') return;
@@ -105,24 +196,67 @@ export default function EntrenarScreen() {
       id: Date.now().toString(),
       title: title || 'Rutina personalizada',
       date: dateStr,
-      duration: durationStr || '1m', // in case it was finished too quickly
+      duration: durationStr || '1m', 
       volume: `${totalKg} kg`,
       exercises: exercises,
     });
 
     Alert.alert("¡Éxito!", "Entrenamiento finalizado y guardado en tu historial.", [
       { text: "Ver Historial", onPress: () => {
+        setIsWorkoutActive(false);
         setExercises([]);
-        setTitle('Rutina personalizada');
-        setStartTime(Date.now());
+        setTitle('');
         router.push('/historial');
       }}
     ]);
   };
 
+  if (!isWorkoutActive) {
+    return (
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.headerTitle}>Entrenar</Text>
+          <Text style={styles.headerSubtitle}>Elige una plantilla o comienza desde cero</Text>
+
+          <TouchableOpacity style={styles.startCustomBtn} onPress={startCustomWorkout}>
+            <MaterialIcons name="add-circle-outline" size={28} color="#ffffff" />
+            <Text style={styles.startCustomBtnText}>Rutina Personalizada</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.sectionTitle}>Plantillas Populares</Text>
+          
+          {templates.map(template => (
+            <TouchableOpacity key={template.id} style={styles.templateCard} onPress={() => startTemplate(template)}>
+              <View style={styles.templateHeader}>
+                <Text style={styles.templateTitle}>{template.title}</Text>
+                <MaterialIcons name="chevron-right" size={24} color="#6C63FF" />
+              </View>
+              <Text style={styles.templateDescription}>{template.description}</Text>
+              <Text style={styles.templateExercisesCount}>
+                {template.exercises.map(e => e.name).join(', ')}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+        </View>
+        <Footer />
+      </ScrollView>
+    );
+  }
+
+  // Active Workout View
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
+        
+        <View style={styles.activeHeader}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={cancelWorkout}>
+            <MaterialIcons name="close" size={24} color="#FF3B30" />
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <Text style={styles.activeTimer}>Entrenando...</Text>
+        </View>
+
         <View style={styles.header}>
           <TextInput 
             style={styles.titleInput} 
@@ -214,6 +348,91 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#11181C',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#687076',
+    marginBottom: 20,
+  },
+  startCustomBtn: {
+    backgroundColor: '#11181C',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 16,
+    marginBottom: 30,
+  },
+  startCustomBtnText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#11181C',
+    marginBottom: 15,
+  },
+  templateCard: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#eeeeee',
+  },
+  templateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  templateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  templateDescription: {
+    fontSize: 14,
+    color: '#687076',
+    marginBottom: 10,
+  },
+  templateExercisesCount: {
+    fontSize: 13,
+    color: '#6C63FF',
+    fontStyle: 'italic',
+  },
+  activeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  cancelBtnText: {
+    color: '#FF3B30',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  activeTimer: {
+    color: '#28a745',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   header: {
     marginBottom: 20,

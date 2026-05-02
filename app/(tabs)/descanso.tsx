@@ -1,29 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Footer from '@/components/Footer';
+import { useWorkoutContext } from '@/context/WorkoutContext';
 
 export default function DescansoScreen() {
-  const [timeLeft, setTimeLeft] = useState(90); // 90 seconds = 01:30
-  const [initialTime, setInitialTime] = useState(90);
-  const [isRunning, setIsRunning] = useState(false);
+  const {
+    timerTimeLeft: timeLeft,
+    setTimerTimeLeft: setTimeLeft,
+    timerInitialTime: initialTime,
+    setTimerInitialTime: setInitialTime,
+    timerIsRunning: isRunning,
+    setTimerIsRunning: setIsRunning
+  } = useWorkoutContext();
   
   // States for custom time modal
   const [modalVisible, setModalVisible] = useState(false);
   const [customMins, setCustomMins] = useState('');
   const [customSecs, setCustomSecs] = useState('');
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -289,7 +283,6 @@ const styles = StyleSheet.create({
     color: '#333333',
     fontWeight: 'bold',
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

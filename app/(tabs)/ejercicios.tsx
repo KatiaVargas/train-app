@@ -14,7 +14,7 @@ type ExerciseDetail = {
   benefits: string;
 };
 
-const exercisesData: ExerciseDetail[] = [
+export const exercisesData: ExerciseDetail[] = [
   // Pecho
   { id: 'p1', name: 'Press de Banca', muscle: 'Pecho', secondaryMuscles: 'Tríceps, Hombro anterior', equipment: 'Barra', level: 'Intermedio', description: 'Acostado en un banco plano, baja la barra hasta el pecho y empuja hacia arriba de forma controlada.', benefits: 'Desarrollo de fuerza general en el torso y masa muscular en el pectoral.' },
   { id: 'p2', name: 'Flexiones (Push-ups)', muscle: 'Pecho', secondaryMuscles: 'Tríceps, Core', equipment: 'Peso Corporal', level: 'Principiante', description: 'En posición de plancha, baja el cuerpo flexionando los brazos hasta que el pecho roce el suelo y empuja.', benefits: 'Mejora el control corporal y la fuerza de empuje básica.' },

@@ -3,8 +3,20 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Footer from '@/components/Footer';
+import { useWorkoutContext } from '@/context/WorkoutContext';
+import { exercisesData } from './ejercicios';
 
 export default function InicioScreen() {
+  const { history, timerTimeLeft, timerIsRunning } = useWorkoutContext();
+
+  const lastWorkout = history.length > 0 ? history[0] : null;
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -17,8 +29,17 @@ export default function InicioScreen() {
               <MaterialIcons name="fitness-center" size={24} color="#6C63FF" />
               <Text style={styles.cardTitle}>Último Entrenamiento</Text>
             </View>
-            <Text style={styles.cardContent}>Día de Pierna - Hace 2 días</Text>
-            <Text style={styles.cardSubContent}>1h 15m • 6 ejercicios</Text>
+            {lastWorkout ? (
+              <>
+                <Text style={styles.cardContent}>{lastWorkout.title} - {lastWorkout.date}</Text>
+                <Text style={styles.cardSubContent}>{lastWorkout.duration} • {lastWorkout.exercises.length} ejercicios</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardContent}>No hay entrenamientos recientes</Text>
+                <Text style={styles.cardSubContent}>Toca aquí para comenzar una nueva rutina hoy</Text>
+              </>
+            )}
           </TouchableOpacity>
         </Link>
 
@@ -26,10 +47,12 @@ export default function InicioScreen() {
           <TouchableOpacity style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="history" size={24} color="#6C63FF" />
-              <Text style={styles.cardTitle}>Esta Semana</Text>
+              <Text style={styles.cardTitle}>Tu Historial</Text>
             </View>
-            <Text style={styles.cardContent}>3 entrenamientos completados</Text>
-            <Text style={styles.cardSubContent}>¡Vas por buen camino!</Text>
+            <Text style={styles.cardContent}>{history.length} entrenamientos completados</Text>
+            <Text style={styles.cardSubContent}>
+              {history.length > 0 ? '¡Sigue así, vas por buen camino!' : 'Aún no tienes historial.'}
+            </Text>
           </TouchableOpacity>
         </Link>
 
@@ -39,8 +62,13 @@ export default function InicioScreen() {
               <MaterialIcons name="timer" size={24} color="#6C63FF" />
               <Text style={styles.cardTitle}>Descanso Actual</Text>
             </View>
-            <Text style={styles.cardContent}>00:00</Text>
-            <Text style={styles.cardSubContent}>Listo para la siguiente serie</Text>
+            <Text style={styles.cardContent}>
+              {timerTimeLeft > 0 ? formatTime(timerTimeLeft) : '00:00'}
+              {timerIsRunning ? ' (En curso)' : ''}
+            </Text>
+            <Text style={styles.cardSubContent}>
+              {timerTimeLeft > 0 ? 'Toca para gestionar tu descanso' : 'Listo para la siguiente serie'}
+            </Text>
           </TouchableOpacity>
         </Link>
 
@@ -48,10 +76,10 @@ export default function InicioScreen() {
           <TouchableOpacity style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="list-alt" size={24} color="#6C63FF" />
-              <Text style={styles.cardTitle}>Ejercicios Recientes</Text>
+              <Text style={styles.cardTitle}>Biblioteca de Ejercicios</Text>
             </View>
-            <Text style={styles.cardContent}>Sentadilla, Peso Muerto, Zancadas</Text>
-            <Text style={styles.cardSubContent}>Toca para ver la biblioteca</Text>
+            <Text style={styles.cardContent}>Explora {exercisesData.length} ejercicios</Text>
+            <Text style={styles.cardSubContent}>Filtra por grupo muscular y aprende la técnica</Text>
           </TouchableOpacity>
         </Link>
       </View>

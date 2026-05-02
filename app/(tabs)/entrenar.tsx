@@ -1,24 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import Footer from '@/components/Footer';
-
-type ExerciseSet = {
-  id: string;
-  kg: string;
-  reps: string;
-  completed: boolean;
-};
-
-type Exercise = {
-  id: string;
-  name: string;
-  sets: ExerciseSet[];
-};
+import { useWorkoutContext, Exercise, ExerciseSet } from '@/context/WorkoutContext';
 
 export default function EntrenarScreen() {
+  const router = useRouter();
+  const { addWorkout } = useWorkoutContext();
+  
+  const [title, setTitle] = useState('Rutina personalizada');
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [newExerciseName, setNewExerciseName] = useState('');
+  const [startTime, setStartTime] = useState<number>(Date.now());
+
+  // Reset start time when component mounts or a new session starts
+  useEffect(() => {
+    setStartTime(Date.now());
+  }, []);
 
   const addExercise = () => {
     if (newExerciseName.trim() === '') return;
@@ -77,6 +76,50 @@ export default function EntrenarScreen() {
     setExercises(exercises.filter(ex => ex.id !== exerciseId));
   };
 
+  const finishWorkout = () => {
+    if (exercises.length === 0) {
+      Alert.alert('Error', 'Añade al menos un ejercicio antes de finalizar.');
+      return;
+    }
+
+    const durationMs = Date.now() - startTime;
+    const minutes = Math.floor(durationMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+    const dateStr = new Date().toLocaleDateString('es-ES', options);
+
+    // Calculate total volume
+    let totalKg = 0;
+    exercises.forEach(ex => {
+      ex.sets.forEach(set => {
+        if (set.completed && set.kg && set.reps) {
+          totalKg += (parseFloat(set.kg) * parseInt(set.reps, 10));
+        }
+      });
+    });
+
+    addWorkout({
+      id: Date.now().toString(),
+      title: title || 'Rutina personalizada',
+      date: dateStr,
+      duration: durationStr || '1m', // in case it was finished too quickly
+      volume: `${totalKg} kg`,
+      exercises: exercises,
+    });
+
+    Alert.alert("¡Éxito!", "Entrenamiento finalizado y guardado en tu historial.", [
+      { text: "Ver Historial", onPress: () => {
+        setExercises([]);
+        setTitle('Rutina personalizada');
+        setStartTime(Date.now());
+        router.push('/historial');
+      }}
+    ]);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -84,7 +127,8 @@ export default function EntrenarScreen() {
           <TextInput 
             style={styles.titleInput} 
             placeholder="Nombre de Rutina" 
-            defaultValue="Rutina Torso" 
+            value={title}
+            onChangeText={setTitle}
           />
           <TextInput 
             style={styles.subtitleInput} 
@@ -154,14 +198,7 @@ export default function EntrenarScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          style={styles.finishButton}
-          onPress={() => {
-            // Aquí iría la lógica para guardar el entrenamiento en una BD
-            alert("¡Entrenamiento finalizado!");
-            setExercises([]);
-          }}
-        >
+        <TouchableOpacity style={styles.finishButton} onPress={finishWorkout}>
           <Text style={styles.finishButtonText}>Finalizar Entrenamiento</Text>
         </TouchableOpacity>
       </View>

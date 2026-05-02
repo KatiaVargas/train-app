@@ -22,6 +22,17 @@ export type WorkoutSession = {
   exercises: Exercise[];
 };
 
+export type ProgressLog = {
+  id: string;
+  date: string;
+  timestamp: number;
+  weight: string;
+  chest: string;
+  waist: string;
+  hips: string;
+  photoUri?: string;
+};
+
 interface WorkoutContextType {
   history: WorkoutSession[];
   addWorkout: (session: WorkoutSession) => void;
@@ -32,6 +43,9 @@ interface WorkoutContextType {
   setTimerTimeLeft: React.Dispatch<React.SetStateAction<number>>;
   setTimerInitialTime: React.Dispatch<React.SetStateAction<number>>;
   setTimerIsRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  // Progress State
+  progressLogs: ProgressLog[];
+  addProgressLog: (log: ProgressLog) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -40,12 +54,23 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [history, setHistory] = useState<WorkoutSession[]>([]);
   
   // Global Timer State
-  const [timerTimeLeft, setTimerTimeLeft] = useState(0); // 0 means not set
+  const [timerTimeLeft, setTimerTimeLeft] = useState(0);
   const [timerInitialTime, setTimerInitialTime] = useState(0);
   const [timerIsRunning, setTimerIsRunning] = useState(false);
 
+  // Global Progress State
+  const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
+
   const addWorkout = (session: WorkoutSession) => {
     setHistory((prev) => [session, ...prev]);
+  };
+
+  const addProgressLog = (log: ProgressLog) => {
+    setProgressLogs((prev) => {
+      const newLogs = [...prev, log];
+      // Sort by timestamp descending (newest first)
+      return newLogs.sort((a, b) => b.timestamp - a.timestamp);
+    });
   };
 
   // Global Timer effect
@@ -70,7 +95,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       timerIsRunning,
       setTimerTimeLeft,
       setTimerInitialTime,
-      setTimerIsRunning
+      setTimerIsRunning,
+      progressLogs,
+      addProgressLog
     }}>
       {children}
     </WorkoutContext.Provider>

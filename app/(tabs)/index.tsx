@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Footer from '@/components/Footer';
 import { useWorkoutContext } from '@/context/WorkoutContext';
 import { exercisesData } from './ejercicios';
+import ProgresoModal from '@/components/ProgresoModal';
 
 export default function InicioScreen() {
-  const { history, timerTimeLeft, timerIsRunning } = useWorkoutContext();
+  const { history, timerTimeLeft, timerIsRunning, progressLogs } = useWorkoutContext();
+  const [progresoModalVisible, setProgresoModalVisible] = useState(false);
 
   const lastWorkout = history.length > 0 ? history[0] : null;
 
@@ -22,6 +24,20 @@ export default function InicioScreen() {
       <View style={styles.content}>
         <Text style={styles.headerTitle}>¡Hola, Katia!</Text>
         <Text style={styles.headerSubtitle}>Lista para tu próximo entrenamiento</Text>
+
+        {/* PROGRESS CARD (NEW) */}
+        <TouchableOpacity style={styles.card} onPress={() => setProgresoModalVisible(true)}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="trending-up" size={24} color="#6C63FF" />
+            <Text style={styles.cardTitle}>Progreso y Medidas</Text>
+          </View>
+          <Text style={styles.cardContent}>
+            {progressLogs.length > 0 
+              ? `Último registro: ${progressLogs[0].weight} kg` 
+              : 'Registra tu evolución corporal'}
+          </Text>
+          <Text style={styles.cardSubContent}>Toca para ver gráficas y añadir fotos</Text>
+        </TouchableOpacity>
 
         <Link href="/entrenar" asChild>
           <TouchableOpacity style={styles.card}>
@@ -84,6 +100,11 @@ export default function InicioScreen() {
         </Link>
       </View>
       <Footer />
+
+      <ProgresoModal 
+        visible={progresoModalVisible} 
+        onClose={() => setProgresoModalVisible(false)} 
+      />
     </ScrollView>
   );
 }
